@@ -1,9 +1,34 @@
+#services:
+#  # A Docker web service
+#  - type: web
+#    name: fastapi-example
+#    runtime: python
+#    plan: free
+#    autoDeploy: false
+#    buildCommand: pip install -r requirements.txt
+#    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+
 services:
-  # A Docker web service
   - type: web
-    name: fastapi-example
-    runtime: python
-    plan: free
-    autoDeploy: false
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    name: fastapi-sqlite-redis
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn -w 2 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT app:app"
+    plan: starter
+    envVars:
+      - key: DB_PATH
+        value: /var/data/app.db
+      - key: REDIS_URL
+        fromService:
+          type: key-value
+          name: app-cache
+          property: connectionString
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
+
+  - type: key-value
+    name: app-cache
+    plan: starter
+
